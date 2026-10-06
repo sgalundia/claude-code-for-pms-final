@@ -24,6 +24,29 @@ prompt library built from your own questions.
 
 ### 1.
 
+classify the cosmetic tickets into "cosmetic" category and route it to the tier 4 customer support agents to file and track. Provide a response back to the customer.
+
 ### 2.
 
+how long after the release of 4.2 we noticed a drop in quality?
+
 ### 3.
+
+give me a timeline of feature dates pre and post 4.2 product ships.
+
+### 4.
+
+what are the problem statements 4.2 is trying to solve for?
+frame the problem statement this way,
+
+i am a (user),
+I am trying to (do a thing),
+but i cannot do so (because)
+which makes me feel (blank)
+before we compare with 4.2, which of the 7 problems did we attempt to address in 4.2?
+
+Then add the problem statements in a table within a column
+
+### 5.
+
+Which problems were solved with the release of 4.2? Which problems were not solved? are they still a problem?

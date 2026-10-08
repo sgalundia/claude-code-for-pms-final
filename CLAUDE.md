@@ -127,3 +127,11 @@ timeout cut) with data before taking a position. Don't adopt or dismiss the
 - Key wiki sources: 4.2 release page comments, Q3 roadmap (last reviewed 30 Jun), 4 handler interviews (Sep). Availability Confidence was committed to 4.2 but cut; still marked Committed.
 - Filter persistence isn't all cosmetic: 6 of 14 post-4.2 tickets have handlers on the wrong list. Triage + draft replies in `00-rook/feedback/filter-tickets-triage.md` (nothing sent or routed; DB is read-only, no "tier 4" team found).
 - Only the defect fixes in 4.2 clearly solved their problem; status text/dark mode, alert sounds and availability trust are still open. Timeout cut had no documented problem behind it.
+
+### Session notes (Module 2, 8 Oct 2026)
+
+- Interviews and tickets are mostly different people: of the 4 interviewees only Ambrose has filed a ticket (1). Tickets come from 11 frequent filers. The two piles agree that callouts vanish (3/4 interviews, 15 tickets). Only the interviews show overload (The Gale 13→19 pings/wk, 0 tickets) and handlers wanting to see live callouts. Only the tickets show account/time zone/access bugs and a pile-up of unanswered follow-ups.
+- Code confirms the mechanism: `offer.py` withdraws after 60 s with nothing shown to the responder or handler; `history.py` penalises a miss exactly like a decline and never recovers (2019 note in the code). Fixing the timeout alone won't restore starved responders. Still open: does the mobile app show a countdown? (staff engineer)
+- Business impact: callouts nobody took doubled, 5.5% → 11.1%. Callout volume did fall about 15% (seasonal), but that doesn't explain the misses. All 45 callout tickets (15 "gone before they could answer", 30 "gone quiet") are still open; a holding reply via the support lead is the cheapest next step.
+- Other things to rule out: availability hours set in the handler's time zone (Halfmoon, a "gone quiet" responder); auto sign-out after about 20 min; phone numbers that won't save. The change to who gets pinged first isn't yet shown to be a problem; test it by replaying August with misses not penalised.
+- Problem statements (P1–P8, with persona, frequency, impact) are in `00-rook/feedback/dispatch-4.2-problem-statements.md`.

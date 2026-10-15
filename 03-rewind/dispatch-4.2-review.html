@@ -1,0 +1,406 @@
+<title>Dispatch 4.2 Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column (incident-review report) with wide figure blocks; signal colours mirror ping outcomes: taken / turned down / missed */
+:root{
+  --paper:#f4f6f8; --sheet:#ffffff; --ink:#15202b; --muted:#5b6876; --rule:#d9dfe6;
+  --taken:#0f7a6e; --declined:#6b7a8c; --missed:#c06a00; --alert:#b3261e; --accent:#1f4e79;
+  --taken-soft:#dff1ee; --missed-soft:#fbecd8; --accent-soft:#e3ecf5;
+  --f-display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#0f1419; --sheet:#161d24; --ink:#e6ebf0; --muted:#9aa7b4; --rule:#2a343e;
+  --taken:#4cc2b2; --declined:#8d9bab; --missed:#f0a24a; --alert:#ff7b72; --accent:#7fb1e0;
+  --taken-soft:#16312d; --missed-soft:#3a2a14; --accent-soft:#1b2a39; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1419; --sheet:#161d24; --ink:#e6ebf0; --muted:#9aa7b4; --rule:#2a343e;
+  --taken:#4cc2b2; --declined:#8d9bab; --missed:#f0a24a; --alert:#ff7b72; --accent:#7fb1e0;
+  --taken-soft:#16312d; --missed-soft:#3a2a14; --accent-soft:#1b2a39; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:860px;margin:0 auto;display:grid;gap:56px}
+h1,h2,h3{font-family:var(--f-display);font-stretch:85%;line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.2rem,6vw,3.4rem);font-weight:800;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,3.6vw,2rem);font-weight:750}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0;max-width:66ch}
+.eyebrow{font:500 .75rem/1.2 var(--f-data);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.section{display:grid;gap:18px;min-width:0}
+.lede{font-size:1.15rem;max-width:62ch}
+.src{font:400 .75rem/1.4 var(--f-data);color:var(--muted)}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.t{color:var(--taken)} .d{color:var(--declined)} .m{color:var(--missed)} .a{color:var(--alert)}
+
+/* header */
+header{padding-top:48px;display:grid;gap:20px;border-bottom:1px solid var(--rule);padding-bottom:36px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px}
+.clock{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.clock svg{flex:none}
+
+/* key figures */
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.fig{background:var(--sheet);padding:18px;display:grid;gap:6px;align-content:start}
+.fig .big{font:600 1.9rem/1 var(--f-data);font-variant-numeric:tabular-nums}
+.fig .big small{font-size:.95rem;color:var(--muted);font-weight:400}
+.fig p{font-size:.9rem;color:var(--muted)}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--rule);background:var(--sheet)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--rule)}
+th{font:500 .72rem/1.3 var(--f-data);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--paper)}
+tr:last-child td{border-bottom:0}
+td.n{font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+.chg{font-weight:600}
+
+/* figures */
+figure{margin:0;background:var(--sheet);border:1px solid var(--rule);padding:18px;display:grid;gap:12px;min-width:0}
+figcaption{display:grid;gap:4px}
+figcaption b{font-family:var(--f-display);font-stretch:90%;font-size:1.05rem}
+.chart{width:100%;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto;min-width:520px}
+.chart svg text{font-family:var(--f-data);font-size:11px;fill:var(--muted)}
+.chart svg .lbl{fill:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* chain */
+.chain{list-style:none;margin:0;padding:0;display:grid;gap:0;counter-reset:s}
+.chain li{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--rule)}
+.chain li::before{counter-increment:s;content:counter(s);font:600 1.1rem/1 var(--f-data);color:var(--missed);
+  width:34px;height:34px;border:1.5px solid var(--missed);border-radius:50%;display:grid;place-items:center}
+.chain li div{display:grid;gap:4px;min-width:0}
+.chain .ev{font-size:.88rem;color:var(--muted)}
+
+/* strip of outcomes */
+.strip{display:flex;flex-wrap:wrap;gap:3px;font:600 .72rem/1 var(--f-data)}
+.strip span{width:20px;height:22px;display:grid;place-items:center;border-radius:3px;color:var(--sheet)}
+.strip .T{background:var(--taken)} .strip .D{background:var(--declined)} .strip .M{background:var(--missed)}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{background:var(--sheet);border:1px solid var(--rule);padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
+
+/* quotes */
+.quotes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+blockquote{margin:0;padding:14px 16px;border-left:3px solid var(--missed);background:var(--sheet);display:grid;gap:8px}
+blockquote p{font-style:italic}
+blockquote cite{font:400 .75rem/1.3 var(--f-data);color:var(--muted);font-style:normal}
+
+/* process */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.step{border-top:3px solid var(--accent);background:var(--sheet);padding:14px;display:grid;gap:6px;align-content:start}
+.step .k{font:500 .72rem/1 var(--f-data);color:var(--accent);letter-spacing:.08em}
+.step p{font-size:.9rem;color:var(--muted)}
+
+/* recs */
+.pill{display:inline-block;font:500 .7rem/1 var(--f-data);padding:4px 7px;border-radius:999px;letter-spacing:.04em;white-space:nowrap}
+.p-core{background:var(--missed-soft);color:var(--missed)}
+.p-guard{background:var(--accent-soft);color:var(--accent)}
+.p-now{background:var(--taken-soft);color:var(--taken)}
+.why{background:var(--ink);color:var(--paper);padding:28px;display:grid;gap:16px}
+.why h2{color:var(--paper)}
+.why ul{margin:0;padding-left:1.2em;display:grid;gap:10px;max-width:66ch}
+.why b{color:var(--paper)}
+.why .src{color:var(--paper);opacity:.7}
+.note{font-size:.85rem;color:var(--muted);border-top:1px solid var(--rule);padding-top:16px;display:grid;gap:6px}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:520px){ .chain li{grid-template-columns:36px 1fr} .why{padding:20px} }
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Rook Dispatch · Release review · Draft for Director of Product and Engineering Manager</span>
+  <div class="clock">
+    <svg width="76" height="76" viewBox="0 0 76 76" aria-label="Answer window cut from 90 to 60 seconds" role="img">
+      <circle cx="38" cy="38" r="32" fill="none" stroke="var(--rule)" stroke-width="8"/>
+      <circle cx="38" cy="38" r="32" fill="none" stroke="var(--missed)" stroke-width="8"
+        stroke-dasharray="134.04 201.06" transform="rotate(-90 38 38)"/>
+      <text x="38" y="43" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="15" font-weight="600" fill="var(--ink)">60s</text>
+    </svg>
+    <h1>Dispatch 4.2 Review</h1>
+  </div>
+  <p class="lede">On 12 August we gave responders 60 seconds instead of 90 to answer a callout. Missed pings jumped from 2% to 18% that day. Because a missed ping is scored as a "no", four responders slid to the bottom of the line and almost stopped getting work. Neighbours took their areas, and twice as many callouts now go unfilled.</p>
+  <div class="meta">
+    <span class="src">Data: 29 Jun – 6 Sep 2026 · 1,696 pings · 1,319 callouts · 147 support tickets · 4 handler interviews · routing code</span>
+    <span class="src">Before = 29 Jun – 11 Aug · After = 12 Aug – 6 Sep</span>
+  </div>
+</header>
+
+<section class="section" aria-labelledby="k">
+  <span class="eyebrow" id="k">The size of it</span>
+  <div class="figs">
+    <div class="fig"><span class="big m">2% → 18%</span><p>of pings missed (no answer in time)</p><span class="src">rook-database · pings</span></div>
+    <div class="fig"><span class="big a">5% → 11%</span><p>of callouts that nobody took</p><span class="src">rook-database · pings + callouts</span></div>
+    <div class="fig"><span class="big">~12 → <span class="m">~3–4</span><small> /wk</small></span><p>pings each for the four starved responders</p><span class="src">rook-database · pings</span></div>
+    <div class="fig"><span class="big">45 <small>open</small></span><p>callout tickets, oldest from release day, none answered</p><span class="src">rook-database · support_tickets</span></div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="c">
+  <span class="eyebrow">What changed</span>
+  <h2 id="c">Two settings moved. One old rule made them stick.</h2>
+  <p>All routing changes in 4.2 were made in one settings file. The rule that turned them into a lasting problem was already there.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Setting</th><th>Before 4.2</th><th>After 4.2</th><th>Plain English</th></tr></thead>
+    <tbody>
+      <tr><td>Time to answer a ping</td><td class="n">90 s</td><td class="n chg m">60 s</td><td>A third less time to reach the phone and tap yes</td></tr>
+      <tr><td>Weight on how close you are</td><td class="n">45%</td><td class="n chg">60%</td><td>Nearby responders ranked higher</td></tr>
+      <tr><td>Weight on recent "yes" record</td><td class="n">40%</td><td class="n chg">25%</td><td>Recent record counts less</td></tr>
+      <tr><td>Weight on having the right skills</td><td class="n">15%</td><td class="n">15%</td><td>Unchanged</td></tr>
+      <tr><td><b>Unchanged rule:</b> a missed ping</td><td colspan="2" class="n m">−0.12, same as a "no"</td><td>Scores never recover on their own (open question in the code since 2019)</td></tr>
+    </tbody>
+  </table></div>
+  <span class="src">Source: config.py, offer.py, history.py, CHANGELOG.md in 00-rook/code/dispatch-routing</span>
+</section>
+
+<section class="section" aria-labelledby="w">
+  <span class="eyebrow">What happened</span>
+  <h2 id="w">Missed pings jumped on release day. The average then hid the damage.</h2>
+  <figure>
+    <figcaption><b>Share of pings taken and missed, per week (all responders)</b>
+      <span class="src">rook-database · pings · weeks start Monday; 4.2 shipped Wed 12 Aug</span></figcaption>
+    <div class="chart" id="weekly"></div>
+    <div class="legend"><span><i style="background:var(--taken)"></i>Taken</span><span><i style="background:var(--missed)"></i>Missed</span></div>
+  </figure>
+  <p>Acceptance looks like it is recovering, from 54% in release week to 73% by the week of 31 August. That recovery is not real. Four responders are now barely pinged, so their misses drop out of the average. Their acceptance since 24 August is zero.</p>
+</section>
+
+<section class="section" aria-labelledby="who">
+  <span class="eyebrow">Who it happened to</span>
+  <h2 id="who">Four responders starved. Seven took on their work.</h2>
+  <figure>
+    <figcaption><b>Pings a week per responder, before → after 4.2</b>
+      <span class="src">rook-database · pings · before 44 days, after 26 days</span></figcaption>
+    <div class="chart" id="dumb"></div>
+    <div class="legend"><span><i style="background:var(--declined)"></i>Before</span><span><i style="background:var(--missed)"></i>After, fewer pings</span><span><i style="background:var(--taken)"></i>After, more pings</span></div>
+  </figure>
+  <div class="pair">
+    <div class="card">
+      <h3>The Undertow · Harborside</h3>
+      <span class="src">Every ping, 3 Aug – 6 Sep · T taken · D turned down · M missed</span>
+      <div class="strip" id="undertow"></div>
+      <p>12 pings a week, then 11, 4, 1, 1. The first ever miss came the morning 4.2 went live. No callout taken since 17 August. His handler filed 11 tickets, all still open.</p>
+    </div>
+    <div class="card">
+      <h3>The Gale · Eastgate</h3>
+      <span class="src">First 19 pings from 12 Aug</span>
+      <div class="strip" id="gale"></div>
+      <p>Also opened with two misses, then took three in a row and recovered. Went from 13 to 21 pings a week and took over Eastgate from Meteor Mite, who shares the same area and handler.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="why">
+  <span class="eyebrow">Why it happened</span>
+  <h2 id="why">How a shorter wait became a trap</h2>
+  <p>Before 4.2 the quiet four and the busiest five were indistinguishable: about 12 pings a week, 75–77% accepted, 3% missed, about 23 seconds to turn a ping down. Then:</p>
+  <ol class="chain">
+    <li><div><b>The window shrank to 60 seconds.</b><span class="ev">Missed offers now end at 61–63 s, against 91–93 s before. Turning down still takes about 22 s, so deciding is not the problem; reaching the phone is.</span></div></li>
+    <li><div><b>The quiet four missed half their pings in the first week.</b><span class="ev">18 of 36 (50%) against 11 of 74 (15%) for the busiest five. Even on jobs in their own area they missed 38%, against 5%. Likely cause: they usually needed 60–90 s to reach the phone (inferred; accept times are not recorded).</span></div></li>
+    <li><div><b>Each miss counted as a "no".</b><span class="ev">−0.12 per miss, +0.08 per yes. Taking under 60% of pings drives a score down. The four took 18–29%.</span></div></li>
+    <li><div><b>A lower score handed their area to a neighbour.</b><span class="ev">Under 0.3, responders got 1.4 pings a week, against 13 at 0.9+. Everyone who stayed at 0.44 or above recovered; nobody at 0.28 or below with a stronger neighbour did.</span></div></li>
+    <li><div><b>Silence made the next ping easier to miss.</b><span class="ev">After 3+ days without a ping, 73% of pings were missed, against 0% before 4.2. The score hit zero and cannot recover on its own.</span></div></li>
+  </ol>
+  <div class="pair">
+    <figure>
+      <figcaption><b>Missed rate by time since that responder's last ping</b><span class="src">rook-database · pings · all responders</span></figcaption>
+      <div class="chart" id="silence"></div>
+      <div class="legend"><span><i style="background:var(--declined)"></i>Before 4.2</span><span><i style="background:var(--missed)"></i>After 4.2</span></div>
+    </figure>
+    <figure>
+      <figcaption><b>Eastgate callouts sent first to each responder, per week</b><span class="src">rook-database · pings + callouts</span></figcaption>
+      <div class="chart" id="eastgate"></div>
+      <div class="legend"><span><i style="background:var(--taken)"></i>The Gale</span><span><i style="background:var(--missed)"></i>Meteor Mite</span></div>
+    </figure>
+  </div>
+  <p><b>What it is not:</b> time of day, weekday, position in the queue, part of the city, or responder quality. Missed pings rose in every split, and before 4.2 the four took 69–81% of their pings (Vesper was third best of 16). The change to rank nearby responders higher had a small, short-lived effect and actually softened the trap.</p>
+</section>
+
+<section class="section" aria-labelledby="ev">
+  <span class="eyebrow">Evidence from users</span>
+  <h2 id="ev">What handlers told us, and whether the data agrees</h2>
+  <div class="quotes">
+    <blockquote><p>"by the time he's actually got a thumb on the screen — it's gone."</p><cite>Aunt Dot, handler for Vesper · interview, 3 Sep</cite></blockquote>
+    <blockquote><p>"coat on, one boot on — when it went to somebody else."</p><cite>Mr. Ambrose, handler for Captain Vantage · interview, 2 Sep</cite></blockquote>
+    <blockquote><p>"one card's dead quiet and the other's on fire."</p><cite>Kip, handler for Meteor Mite and The Gale · interview, 4 Sep</cite></blockquote>
+    <blockquote><p>"starting to wonder if im still even in the system."</p><cite>The Undertow and Farlight, passed on by their handlers · tickets, 1 Sep</cite></blockquote>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Signal</th><th>Interviews (4)</th><th>Tickets (147)</th><th>Pings agree?</th></tr></thead>
+    <tbody>
+      <tr><td>Callout gone before they could answer</td><td class="n">3 of 4, unprompted</td><td class="n">15, all open</td><td>Yes. All 15 match a real miss within 2 days</td></tr>
+      <tr><td>Responder gone quiet</td><td class="n">2 of 4</td><td class="n">30, all open</td><td>Yes. 14 of 17 quoted counts exact, 3 off by one. Tickets lag the data by 2–3 days</td></tr>
+      <tr><td>Handlers want to see live callouts</td><td class="n">3 of 4</td><td class="n">0</td><td>n/a</td></tr>
+      <tr><td>Vesper and Meteor Mite starved</td><td class="n">mentioned in passing</td><td class="n">0</td><td>Hit as hard as the two with tickets: handlers who never file</td></tr>
+      <tr><td>Busy responders overloaded</td><td class="n">1 of 4</td><td class="n">0</td><td>Seven gained 2–6 pings a week</td></tr>
+    </tbody>
+  </table></div>
+  <span class="src">Sources: rook-wiki Research interviews (2–5 Sep, product designer) · rook-database support_tickets and pings</span>
+</section>
+
+<section class="section" aria-labelledby="pr">
+  <span class="eyebrow">How we found it</span>
+  <h2 id="pr">Process</h2>
+  <div class="steps">
+    <div class="step"><span class="k">STEP 1</span><h3>Interviews</h3><p>Read all four handler interviews. Grouped complaints, counted, noted which were volunteered.</p></div>
+    <div class="step"><span class="k">STEP 2</span><h3>Tickets</h3><p>Read all 147 ticket bodies. Themes by week, responder, open or closed. Found who never files.</p></div>
+    <div class="step"><span class="k">STEP 3</span><h3>Pings</h3><p>Outcomes before and after, per responder, gaps, unfilled callouts. Ruled out time, place, queue position.</p></div>
+    <div class="step"><span class="k">STEP 4</span><h3>Code</h3><p>Traced the routing rules. Replayed every ping through the scoring to see who fell, and why some recovered.</p></div>
+    <div class="step"><span class="k">STEP 5</span><h3>Cross-check</h3><p>Checked ticket claims against pings, compared quiet against busy responders, and tested alert rules.</p></div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="rec">
+  <span class="eyebrow">Recommendations</span>
+  <h2 id="rec">Fix the timing and the scoring, not the ranking</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Fix</th><th>Evidence</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td><span class="pill p-core">CORE</span><br><b>Restore the 90-second window</b></td><td>At 90 s, both groups missed 3%. At 60 s, the quiet four missed 50%.</td><td>Engineering manager</td></tr>
+      <tr><td class="n">2</td><td><span class="pill p-core">CORE</span><br><b>Stop counting a missed ping as a "no"</b></td><td>110 misses since 4.2 each cost −0.12. Replaying with misses not counted: no responder falls below 0.5.</td><td>Staff engineer</td></tr>
+      <tr><td class="n">3</td><td><span class="pill p-core">CORE</span><br><b>Restore the four scores to their 11 Aug level</b></td><td>Scores never recover by themselves. At a neutral 0.5 they would still lose to neighbours now at 1.0.</td><td>Staff engineer, with director sign-off</td></tr>
+      <tr><td class="n">4</td><td><span class="pill p-now">NOW</span><br><b>Reply to the 45 open callout tickets</b>, and to Aunt Dot and Kip</td><td>Oldest open since 12 Aug. Two handlers' responders are hit but never filed.</td><td>Support lead</td></tr>
+      <tr><td class="n">5</td><td><span class="pill p-guard">GUARD</span><br><b>Floor: misses alone can't push a score below ~0.5</b></td><td>Everyone at 0.44 or above recovered; nobody at 0.28 or below with a neighbour did.</td><td>Staff engineer</td></tr>
+      <tr><td class="n">6</td><td><span class="pill p-guard">GUARD</span><br><b>Home responder gets first call on their area</b> unless their record is genuinely poor</td><td>Home responders took 92–97% of their area before. Neighbours covering left Southport 22% unfilled (was 4%).</td><td>Director of Product (policy)</td></tr>
+      <tr><td class="n">7</td><td><span class="pill p-guard">GUARD</span><br><b>Countdown on the phone, alert to the handler</b></td><td>3 of 4 handlers asked to see live callouts. 73% missed after 3+ days of silence.</td><td>Product designer, engineering</td></tr>
+      <tr><td class="n">8</td><td><span class="pill p-guard">GUARD</span><br><b>Two alerts and per-responder reporting</b></td><td>"3+ misses in 7 days" would have fired on 13 Aug. "Pings below half of usual and 3+ misses in 14 days" caught exactly the four on 19–22 Aug, with zero false alarms in six normal weeks.</td><td>Engineering manager, support lead, PM</td></tr>
+    </tbody>
+  </table></div>
+  <p><b>Keep</b> the change to rank nearby responders higher. It was a long-standing responder request, and the data shows it is not the cause.</p>
+</section>
+
+<section class="why" aria-labelledby="imp">
+  <span class="eyebrow" style="color:var(--paper);opacity:.75">Why fixing it matters</span>
+  <h2 id="imp">Every week this waits, the product fails at its one job more often</h2>
+  <ul>
+    <li><b>More incidents with no responder.</b> Callouts nobody took doubled from 5% to 11%. Dispatch exists to get someone there.</li>
+    <li><b>We are losing good responders.</b> The four took 69–81% of their pings before 4.2. Two are now asking if they are "still even in the system". Dispatch is the reason responders stay with Rook.</li>
+    <li><b>The busy ones are being worn down.</b> Seven responders took on 2–6 more pings a week, with acceptance falling to about 70%. Their own areas suffer: Southport went from 4% to 22% unfilled.</li>
+    <li><b>Handlers have stopped hearing back.</b> 45 callout tickets are open, some for four weeks. The two most affected handlers filed every two or three days.</li>
+    <li><b>It will not fix itself.</b> Scores do not recover without pings, and the starved responders barely get any. Waiting for September to "come back" leaves them at zero.</li>
+    <li><b>The headline number hides it.</b> Average acceptance is climbing back while the four sit at zero. Without per-responder reporting, the next release could do the same thing unseen.</li>
+  </ul>
+  <span class="src">Sources: rook-database pings, callouts, support_tickets · routing code</span>
+</section>
+
+<section class="section" aria-labelledby="cf">
+  <span class="eyebrow">Confidence and gaps</span>
+  <h2 id="cf">How sure we are</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Finding</th><th>Confidence (0–95)</th><th>What would firm it up</th></tr></thead>
+    <tbody>
+      <tr><td>Ping outcomes before and after; the 60 s cut causes the misses</td><td class="n">85</td><td>Data after 6 Sep</td></tr>
+      <tr><td>Who starved and who gained</td><td class="n">85</td><td>Live data since 6 Sep</td></tr>
+      <tr><td>Unfilled callouts doubled</td><td class="n">75</td><td>More weeks; small absolute counts (48, 49)</td></tr>
+      <tr><td>The quiet four need 60–90 s to reach the phone</td><td class="n">50</td><td><b>Accept time per ping</b> (staff engineer)</td></tr>
+      <tr><td>Score trap explains who got stuck (replay)</td><td class="n">60</td><td>Real stored scores (staff engineer)</td></tr>
+      <tr><td>Fixes 1–3 restore the four</td><td class="n">55</td><td>Replay inside the real ranking, or a staged rollout</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <span>Sample note: 16 responders over 26 days after release. Patterns are consistent; exact percentages will move with more data.</span>
+    <span>Observed = counted from a source. Inferred = our reading of it, labelled where used. Scores are a replay of the routing rules starting everyone at 0.5 on 29 June, not the system's stored values.</span>
+    <span>Rook Industries is a fictional company used in Product School's "Claude Code for PMs" course.</span>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  const NS="http://www.w3.org/2000/svg";
+  function el(tag,attrs,parent,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;if(parent)parent.appendChild(e);return e;}
+  function svg(id,w,h){const s=el("svg",{viewBox:`0 0 ${w} ${h}`,role:"img"});document.getElementById(id).appendChild(s);return s;}
+
+  /* weekly taken% and missed% (rook-database pings, weekly totals) */
+  const weeks=["29 Jun","6 Jul","13 Jul","20 Jul","27 Jul","3 Aug","10 Aug","17 Aug","24 Aug","31 Aug"];
+  const taken=[77,77,76,75,78,78,54,66,67,73], missed=[2,2,3,3,2,1,21,18,15,13];
+  (function(){
+    const W=720,H=280,L=40,R=16,T=16,B=36,s=svg("weekly",W,H);
+    s.setAttribute("aria-label","Weekly taken and missed share, release in week of 10 August");
+    const x=i=>L+i*(W-L-R)/(weeks.length-1), y=v=>T+(100-v)*(H-T-B)/100;
+    [0,25,50,75,100].forEach(v=>{el("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:"var(--rule)","stroke-width":1},s);el("text",{x:L-8,y:y(v)+4,"text-anchor":"end"},s,v+"%");});
+    const rx=x(5)+(x(6)-x(5))*0.6;
+    el("rect",{x:rx,y:T,width:W-R-rx,height:H-T-B,fill:"var(--missed-soft)",opacity:.6},s);
+    el("line",{x1:rx,x2:rx,y1:T,y2:H-B,stroke:"var(--missed)","stroke-dasharray":"4 3"},s);
+    el("text",{x:rx+6,y:T+14,class:"lbl"},s,"4.2 ships · 12 Aug");
+    weeks.forEach((w,i)=>{ if(i%1===0) el("text",{x:x(i),y:H-B+18,"text-anchor":"middle"},s,w);});
+    [[taken,"var(--taken)"],[missed,"var(--missed)"]].forEach(([d,c])=>{
+      el("polyline",{points:d.map((v,i)=>x(i)+","+y(v)).join(" "),fill:"none",stroke:c,"stroke-width":2.5,"stroke-linejoin":"round"},s);
+      d.forEach((v,i)=>el("circle",{cx:x(i),cy:y(v),r:i===d.length-1||i===6?4:2.5,fill:c},s));
+    });
+    el("text",{x:x(6)+6,y:y(54)+4,class:"lbl"},s,"54%");
+    el("text",{x:x(6)+6,y:y(21)-6,class:"lbl"},s,"21%");
+    el("text",{x:x(9),y:y(73)-10,"text-anchor":"end",class:"lbl"},s,"73%");
+    el("text",{x:x(0),y:y(2)-8},s,"2%");
+  })();
+
+  /* dumbbell: pings per week before -> after (rook-database pings) */
+  const resp=[["Vesper",13.7,4.6,1],["Farlight",11.9,3.0,1],["The Undertow",11.9,3.8,1],["Meteor Mite",11.1,3.8,1],
+    ["Corporal Ashgrove",10.0,7.8,0],["Halfmoon",11.0,8.9,0],["The Drift",6.2,7.5,0],["Sgt. Bulwark",9.1,10.5,0],
+    ["The Longcast",7.2,8.6,0],["Cindermark",9.1,11.3,0],["Ironvale",8.1,10.5,0],["Sgt. Falkirk",10.0,14.0,0],
+    ["Captain Vantage",12.1,15.9,0],["Stormwrack",13.0,17.0,0],["Nightwell",15.1,18.8,0],["The Gale",13.0,18.6,0]];
+  (function(){
+    const W=720,row=24,T=24,B=30,L=140,R=56,H=T+B+row*resp.length,s=svg("dumb",W,H);
+    s.setAttribute("aria-label","Pings per week before and after 4.2 for 16 responders");
+    const x=v=>L+v*(W-L-R)/20;
+    [0,5,10,15,20].forEach(v=>{el("line",{x1:x(v),x2:x(v),y1:T-8,y2:H-B,stroke:"var(--rule)"},s);el("text",{x:x(v),y:H-B+18,"text-anchor":"middle"},s,v);});
+    el("text",{x:W-R+8,y:H-B+18},s,"/wk");
+    resp.forEach(([n,b,a,q],i)=>{
+      const yy=T+i*row+row/2, c=a<b?"var(--missed)":"var(--taken)";
+      if(i===4) el("line",{x1:8,x2:W-8,y1:T+i*row,y2:T+i*row,stroke:"var(--rule)","stroke-dasharray":"3 3"},s);
+      el("text",{x:L-10,y:yy+4,"text-anchor":"end",class:q?"lbl":"","font-weight":q?600:400},s,n);
+      el("line",{x1:x(b),x2:x(a),y1:yy,y2:yy,stroke:c,"stroke-width":3,opacity:.45},s);
+      el("circle",{cx:x(b),cy:yy,r:4.5,fill:"var(--declined)"},s);
+      el("circle",{cx:x(a),cy:yy,r:5.5,fill:c},s);
+      el("text",{x:(a<b?x(a)-9:x(a)+9),y:yy+4,"text-anchor":a<b?"end":"start",class:"lbl"},s,a.toFixed(1));
+    });
+  })();
+
+  /* outcome strips (rook-database pings) */
+  function strip(id,seq,breaks){const host=document.getElementById(id);[...seq].forEach((c,i)=>{const sp=document.createElement("span");sp.className=c;sp.textContent=c;sp.title={T:"Taken",D:"Turned down",M:"Missed"}[c];host.appendChild(sp);});}
+  // The Undertow 3 Aug - 6 Sep: wk1 TDTTDTDTTTTT, wk2 TTDMMTTMMMD, wk3 DTMM, wk4 M, wk5 M
+  strip("undertow","TDTTDTDTTTTT"+"TTDMMTTMMMD"+"DTMM"+"M"+"M");
+  strip("gale","MMTTTDTDTDTTTDTTTTD");
+
+  /* silence vs missed (rook-database pings, all responders) */
+  (function(){
+    const cats=["< 6 h","6–24 h","1–3 days","3+ days"],b=[1,3,4,0],a=[15,16,24,73];
+    const W=360,H=230,L=34,R=8,T=14,B=34,s=svg("silence",W,H);
+    s.setAttribute("aria-label","Missed rate by time since previous ping");
+    s.style.minWidth="300px";
+    const y=v=>T+(100-v)*(H-T-B)/100, gw=(W-L-R)/cats.length, bw=gw*0.3;
+    [0,25,50,75,100].forEach(v=>{el("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:"var(--rule)"},s);el("text",{x:L-6,y:y(v)+4,"text-anchor":"end"},s,v+"%");});
+    cats.forEach((c,i)=>{const gx=L+i*gw+gw/2;
+      el("rect",{x:gx-bw-2,y:y(b[i]),width:bw,height:y(0)-y(b[i]),fill:"var(--declined)"},s);
+      el("rect",{x:gx+2,y:y(a[i]),width:bw,height:y(0)-y(a[i]),fill:"var(--missed)"},s);
+      el("text",{x:gx+2+bw/2,y:y(a[i])-5,"text-anchor":"middle",class:"lbl"},s,a[i]+"%");
+      el("text",{x:gx,y:H-B+16,"text-anchor":"middle"},s,c);});
+  })();
+
+  /* Eastgate first-in-line (rook-database pings + callouts) */
+  (function(){
+    const wk=["3 Aug","10 Aug","17 Aug","24 Aug","31 Aug"],g=[10,5,11,13,15],m=[5,6,2,1,0];
+    const W=360,H=230,L=28,R=8,T=14,B=34,s=svg("eastgate",W,H);
+    s.setAttribute("aria-label","Eastgate callouts sent first to The Gale and Meteor Mite per week");
+    s.style.minWidth="300px";
+    const y=v=>T+(16-v)*(H-T-B)/16, gw=(W-L-R)/wk.length, bw=gw*0.32;
+    [0,4,8,12,16].forEach(v=>{el("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:"var(--rule)"},s);el("text",{x:L-6,y:y(v)+4,"text-anchor":"end"},s,v);});
+    wk.forEach((w,i)=>{const gx=L+i*gw+gw/2;
+      el("rect",{x:gx-bw-2,y:y(g[i]),width:bw,height:y(0)-y(g[i]),fill:"var(--taken)"},s);
+      el("rect",{x:gx+2,y:y(m[i]),width:bw,height:Math.max(y(0)-y(m[i]),0),fill:"var(--missed)"},s);
+      el("text",{x:gx-bw/2-2,y:y(g[i])-5,"text-anchor":"middle",class:"lbl"},s,g[i]);
+      el("text",{x:gx+2+bw/2,y:y(m[i])-5,"text-anchor":"middle",class:"lbl"},s,m[i]);
+      el("text",{x:gx,y:H-B+16,"text-anchor":"middle"},s,w);});
+    el("line",{x1:L+gw,x2:L+gw,y1:T,y2:H-B,stroke:"var(--missed)","stroke-dasharray":"4 3"},s);
+  })();
+})();
+</script>
